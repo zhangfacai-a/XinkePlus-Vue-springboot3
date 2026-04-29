@@ -25,24 +25,19 @@ import java.util.Set;
 /**
  * 钉钉基础 API 服务。
  *
- * 这个类只负责三件事：
- * 1. 获取并缓存 access_token
- * 2. 获取部门
- * 3. 获取用户
+ * 这个类只负责调用钉钉：
+ * 1. token
+ * 2. 部门
+ * 3. 在职用户
  *
- * 注意：
- * 在线表格、业务表导入、Sheet 解析全部不要放在这里。
- * 后面你要重写在线表格模块时，可以单独建 DingTalkSheetService。
+ * 不负责写若依数据库；写库逻辑在 DingTalkSyncService。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DingTalkApiService {
 
-    /** Redis 里的 token 缓存 key */
     private static final String TOKEN_KEY = "dingtalk:access_token";
-
-    /** 钉钉特殊部门ID，旧代码里遇到过，直接跳过 */
     private static final Long SKIP_DEPT_ID = -7L;
 
     private final DingTalkProperties dingTalkProperties;
@@ -53,10 +48,7 @@ public class DingTalkApiService {
     /**
      * 获取钉钉 access_token。
      *
-     * 流程：
-     * 1. 先从 Redis 读缓存
-     * 2. 缓存没有，再调用钉钉 token 接口
-     * 3. 成功后写回 Redis，并提前 5 分钟过期
+     * 先从 Redis 读；没有再调钉钉；成功后提前 5 分钟过期，避免临界点失效。
      */
     public String getAccessToken() {
         String cachedToken = stringRedisTemplate.opsForValue().get(TOKEN_KEY);
@@ -90,21 +82,16 @@ public class DingTalkApiService {
         String accessToken = jsonNode.get("access_token").asText();
         int expiresIn = jsonNode.path("expires_in").asInt(7200);
 
-        stringRedisTemplate.opsForValue().set(
-                TOKEN_KEY,
-                accessToken,
-                Duration.ofSeconds(Math.max(expiresIn - 300L, 300L))
-        );
-
+        stringRedisTemplate.opsForValue().set(TOKEN_KEY, accessToken, Duration.ofSeconds(Math.max(expiresIn - 300L, 300L)));
         log.info("钉钉 access_token 获取成功，已写入 Redis 缓存");
         return accessToken;
     }
 
     /**
-     * 获取所有部门。
+     * 递归获取全部子部门。
      *
-     * 采用广度优先遍历：
-     * 从 rootDeptId 开始，逐层拉取子部门，直到没有子部门为止。
+     * 注意：这里默认不返回 rootDeptId 自己，只返回它下面的子部门。
+     * rootDeptId 会在同步时映射到配置里的 ruoyiRootDeptId。
      */
     public List<DingTalkDeptDto> getAllDepartments() {
         List<DingTalkDeptDto> result = new ArrayList<>();
@@ -122,21 +109,17 @@ public class DingTalkApiService {
                 if (dept.getDeptId() == null || SKIP_DEPT_ID.equals(dept.getDeptId())) {
                     continue;
                 }
-
                 if (visited.add(dept.getDeptId())) {
                     result.add(dept);
                     queue.add(dept.getDeptId());
                 }
             }
         }
-
         return result;
     }
 
     /**
-     * 获取指定部门下的用户列表。
-     *
-     * 钉钉接口是分页返回的，所以这里用 cursor 循环拉完。
+     * 获取指定钉钉部门下的用户，自动翻页。
      */
     public List<DingTalkUserDto> getUsersByDeptId(Long deptId) {
         if (deptId == null) {
@@ -174,7 +157,6 @@ public class DingTalkApiService {
 
             JsonNode resultNode = jsonNode.path("result");
             JsonNode listNode = resultNode.path("list");
-
             if (listNode.isArray()) {
                 for (JsonNode item : listNode) {
                     users.add(parseUser(item));
@@ -184,17 +166,13 @@ public class DingTalkApiService {
             hasMore = resultNode.path("has_more").asBoolean(false);
             cursor = parseNextCursor(resultNode.get("next_cursor"));
         }
-
         return users;
     }
 
     /**
-     * 获取企业全部用户。
+     * 获取全部在职用户。
      *
-     * 逻辑：
-     * 1. 先获取所有部门
-     * 2. 再按部门拉用户
-     * 3. 因为一个员工可能在多个部门，所以用 userid 去重
+     * 做法：先拉全部部门，再按部门拉用户，用 userid 去重。
      */
     public List<DingTalkUserDto> getAllUsers() {
         List<DingTalkDeptDto> allDepartments = getAllDepartments();
@@ -203,7 +181,6 @@ public class DingTalkApiService {
         Long rootDeptId = dingTalkProperties.getRootDeptId() == null ? 1L : dingTalkProperties.getRootDeptId();
         List<Long> deptIds = new ArrayList<>();
         deptIds.add(rootDeptId);
-
         for (DingTalkDeptDto dept : allDepartments) {
             if (dept.getDeptId() != null) {
                 deptIds.add(dept.getDeptId());
@@ -211,15 +188,13 @@ public class DingTalkApiService {
         }
 
         for (Long deptId : deptIds) {
-            List<DingTalkUserDto> deptUsers = getUsersByDeptId(deptId);
-            for (DingTalkUserDto user : deptUsers) {
+            for (DingTalkUserDto user : getUsersByDeptId(deptId)) {
                 if (user.getUserid() == null || user.getUserid().isBlank()) {
                     continue;
                 }
                 userMap.putIfAbsent(user.getUserid(), user);
             }
         }
-
         return new ArrayList<>(userMap.values());
     }
 
@@ -228,11 +203,7 @@ public class DingTalkApiService {
      */
     private List<DingTalkDeptDto> listSubDepartments(Long deptId) {
         String accessToken = getAccessToken();
-
-        Map<String, Object> body = Map.of(
-                "dept_id", deptId,
-                "language", "zh_CN"
-        );
+        Map<String, Object> body = Map.of("dept_id", deptId, "language", "zh_CN");
 
         JsonNode jsonNode;
         try {
@@ -250,22 +221,20 @@ public class DingTalkApiService {
 
         List<DingTalkDeptDto> list = new ArrayList<>();
         JsonNode resultNode = jsonNode.path("result");
-
         if (resultNode.isArray()) {
             for (JsonNode item : resultNode) {
                 DingTalkDeptDto dto = new DingTalkDeptDto();
                 dto.setDeptId(item.path("dept_id").isMissingNode() ? null : item.path("dept_id").asLong());
-                dto.setName(item.path("name").asText(null));
                 dto.setParentId(item.path("parent_id").isMissingNode() ? null : item.path("parent_id").asLong());
+                dto.setName(item.path("name").asText(null));
                 list.add(dto);
             }
         }
-
         return list;
     }
 
     /**
-     * 解析用户 JSON。
+     * 解析钉钉用户 JSON。
      */
     private DingTalkUserDto parseUser(JsonNode item) {
         DingTalkUserDto dto = new DingTalkUserDto();
@@ -285,22 +254,15 @@ public class DingTalkApiService {
             }
         }
         dto.setDeptIdList(deptIdList);
-
         return dto;
     }
 
-    /**
-     * 钉钉旧版 oapi 接口统一检查。
-     */
     private void checkOldApiResult(JsonNode jsonNode, String message) {
         if (jsonNode == null || jsonNode.path("errcode").asInt(-1) != 0) {
             throw new DingTalkApiException(message + "，返回结果：" + jsonNode);
         }
     }
 
-    /**
-     * 解析分页游标。
-     */
     private long parseNextCursor(JsonNode nextCursorNode) {
         if (nextCursorNode == null || nextCursorNode.isNull()) {
             return 0L;
@@ -311,9 +273,6 @@ public class DingTalkApiService {
         return nextCursorNode.asLong(0L);
     }
 
-    /**
-     * 检查 token 必需配置，避免空配置时排查半天。
-     */
     private void checkTokenConfig() {
         if (isBlank(dingTalkProperties.getClientId())) {
             throw new DingTalkApiException("dingtalk.client-id 未配置");

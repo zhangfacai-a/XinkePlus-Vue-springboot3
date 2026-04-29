@@ -3,10 +3,10 @@ package com.ruoyi.dingtalk.exception;
 /**
  * 钉钉接口异常。
  *
- * 统一抛这个异常，方便后面你接入全局异常处理或者日志记录。
+ * 用运行时异常是为了让若依的 GlobalExceptionHandler 统一处理，
+ * controller 不需要每个方法都 try-catch。
  */
 public class DingTalkApiException extends RuntimeException {
-
     public DingTalkApiException(String message) {
         super(message);
     }

@@ -2,39 +2,35 @@ package com.ruoyi.dingtalk.controller;
 
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.dingtalk.service.DingTalkApiService;
+import com.ruoyi.dingtalk.service.DingTalkSyncService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 钉钉基础接口。
  *
- * 当前模块只保留基础能力：
- * 1. 获取 token
- * 2. 获取部门
- * 3. 获取用户
+ * 当前模块只做：
+ * 1. token 测试
+ * 2. 部门/用户读取测试
+ * 3. 部门/用户同步到若依
  *
- * 在线表格相关接口已经全部剥离，后面建议单独重写成：
- * DingTalkSheetController / DingTalkSheetService。
+ * 在线表格、Sheet 导入不要写在这里，后面单独重写。
  */
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/dingtalk")
+@RequiredArgsConstructor
 public class DingTalkController {
 
     private final DingTalkApiService dingTalkApiService;
+    private final DingTalkSyncService dingTalkSyncService;
 
     /**
-     * 获取 access_token。
+     * 测试钉钉 token 是否能正常获取。
      *
-     * 用途：
-     * 1. 测试钉钉应用配置是否正确
-     * 2. 测试 Redis token 缓存是否正常
-     *
-     * CMD 测试：
-     * curl -X GET "http://localhost:8080/dingtalk/token"
+     * CMD：
+     * curl http://localhost:8080/dingtalk/token
      */
     @GetMapping("/token")
     public AjaxResult token() {
@@ -42,10 +38,10 @@ public class DingTalkController {
     }
 
     /**
-     * 获取企业所有部门。
+     * 测试拉取钉钉全部部门。
      *
-     * CMD 测试：
-     * curl -X GET "http://localhost:8080/dingtalk/depts"
+     * CMD：
+     * curl http://localhost:8080/dingtalk/depts
      */
     @GetMapping("/depts")
     public AjaxResult depts() {
@@ -53,10 +49,10 @@ public class DingTalkController {
     }
 
     /**
-     * 获取指定部门下的用户。
+     * 测试拉取指定部门用户。
      *
-     * CMD 测试：
-     * curl -X GET "http://localhost:8080/dingtalk/users/by-dept?deptId=1"
+     * CMD：
+     * curl "http://localhost:8080/dingtalk/users/by-dept?deptId=1"
      */
     @GetMapping("/users/by-dept")
     public AjaxResult usersByDept(@RequestParam Long deptId) {
@@ -64,17 +60,63 @@ public class DingTalkController {
     }
 
     /**
-     * 获取企业所有用户。
+     * 测试拉取钉钉全部在职用户。
      *
-     * 注意：
-     * 这个接口会遍历所有部门并拉取用户，企业人数多时会慢。
-     *
-     * CMD 测试：
-     * curl -X GET "http://localhost:8080/dingtalk/users/all"
+     * CMD：
+     * curl http://localhost:8080/dingtalk/users/all
      */
     @GetMapping("/users/all")
     public AjaxResult usersAll() {
         return AjaxResult.success(dingTalkApiService.getAllUsers());
     }
 
+    /**
+     * 同步部门到若依 sys_dept。
+     *
+     * CMD：
+     * curl -X POST http://localhost:8080/dingtalk/sync/depts
+     */
+    @PostMapping("/sync/depts")
+    public AjaxResult syncDepts() {
+        return AjaxResult.success(dingTalkSyncService.syncDepartments());
+    }
+
+    /**
+     * 同步用户到若依 sys_user。
+     *
+     * 注意：同步用户前，建议先同步部门。
+     *
+     * CMD：
+     * curl -X POST http://localhost:8080/dingtalk/sync/users
+     */
+    @PostMapping("/sync/users")
+    public AjaxResult syncUsers() {
+        return AjaxResult.success(dingTalkSyncService.syncUsers());
+    }
+
+    /**
+     * 一键同步：先部门，后用户。
+     *
+     * CMD：
+     * curl -X POST http://localhost:8080/dingtalk/sync/all
+     */
+    @PostMapping("/sync/all")
+    public AjaxResult syncAll() {
+        return AjaxResult.success(dingTalkSyncService.syncAll());
+    }
+
+    /**
+     * 手动标记离职。
+     *
+     * 只停用用户，不删除用户。
+     *
+     * CMD 示例：
+     * curl -X POST "http://localhost:8080/dingtalk/sync/dimission" ^
+     *   -H "Content-Type: application/json" ^
+     *   -d "[\"userid001\",\"userid002\"]"
+     */
+    @PostMapping("/sync/dimission")
+    public AjaxResult markDimission(@RequestBody List<String> dingTalkUserIds) {
+        return AjaxResult.success(dingTalkSyncService.markDimission(dingTalkUserIds));
+    }
 }

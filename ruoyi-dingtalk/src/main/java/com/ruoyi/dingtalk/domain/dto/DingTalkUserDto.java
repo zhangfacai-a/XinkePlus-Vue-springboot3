@@ -7,17 +7,14 @@ import java.util.List;
 /**
  * 钉钉用户 DTO。
  *
- * 注意：
- * 1. 这是从钉钉接口返回的数据对象，不是若依 SysUser。
- * 2. 不要在这里混入数据库字段，避免后面重构困难。
+ * 注意：这是钉钉用户，不是若依 SysUser。
  */
 @Data
 public class DingTalkUserDto {
-
-    /** 钉钉用户ID，企业内唯一，后续同步用户时最重要 */
+    /** 钉钉 userid，企业内唯一，是同步 sys_user 的核心唯一键 */
     private String userid;
 
-    /** 钉钉 unionid，跨应用场景可能会用到 */
+    /** unionid，跨应用场景使用 */
     private String unionid;
 
     /** 员工姓名 */
@@ -35,6 +32,6 @@ public class DingTalkUserDto {
     /** 邮箱 */
     private String email;
 
-    /** 所属部门ID列表 */
+    /** 所属部门ID列表，取第一个作为主部门 */
     private List<Long> deptIdList;
 }
