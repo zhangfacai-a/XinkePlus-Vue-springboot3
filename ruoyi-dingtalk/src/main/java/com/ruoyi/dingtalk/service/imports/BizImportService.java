@@ -120,11 +120,26 @@ public class BizImportService {
         for (Map.Entry<String, String> entry : excelValues.entrySet()) {
             BizImportTemplateColumn column = mapping.get(entry.getKey());
             if (column == null) continue;
+
+            String dbField = column.getDbField();
             String value = entry.getValue();
             if ((value == null || value.isBlank()) && column.getDefaultValue() != null) {
                 value = column.getDefaultValue();
             }
-            row.put(column.getDbField(), value);
+
+            /*
+             * 防止多个 Excel 表头错误/历史原因映射到同一个 dbField 时，后面的空单元格覆盖前面的有效值。
+             * 例如："结束日期" 和 "停运日期" 如果都配成 stop_date，AE列空值会把M列结束日期覆盖成空，
+             * 最终出现“结束日期不能为空”。
+             */
+            Object oldValue = row.get(dbField);
+            boolean oldBlank = oldValue == null || String.valueOf(oldValue).isBlank();
+            boolean newBlank = value == null || value.isBlank();
+            if (!row.containsKey(dbField) || oldBlank || !newBlank) {
+                if (!(oldValue != null && !String.valueOf(oldValue).isBlank() && newBlank)) {
+                    row.put(dbField, value);
+                }
+            }
         }
         return row;
     }

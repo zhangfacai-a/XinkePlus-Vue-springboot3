@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -28,9 +27,12 @@ public class ExcelReadService {
                 throw new IllegalArgumentException("未找到表头行，headerRowNo=" + template.getHeaderRowNo());
             }
 
+            DataFormatter formatter = new DataFormatter(Locale.CHINA);
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+
             Map<Integer, String> headers = new LinkedHashMap<>();
             for (Cell cell : headerRow) {
-                String name = cellToString(cell);
+                String name = cellToString(cell, formatter, evaluator);
                 if (name != null && !name.isBlank()) {
                     headers.put(cell.getColumnIndex(), name.trim());
                 }
@@ -47,7 +49,7 @@ public class ExcelReadService {
                 boolean allBlank = true;
                 for (Map.Entry<Integer, String> entry : headers.entrySet()) {
                     Cell cell = row.getCell(entry.getKey());
-                    String value = cellToString(cell);
+                    String value = cellToString(cell, formatter, evaluator);
                     if (value != null && !value.isBlank()) {
                         allBlank = false;
                     }
@@ -81,16 +83,17 @@ public class ExcelReadService {
         return workbook.getSheetAt(0);
     }
 
-    private int nullToOne(Integer value) { return value == null ? 1 : value; }
+    private int nullToOne(Integer value) {
+        return value == null ? 1 : value;
+    }
 
-    private String cellToString(Cell cell) {
+    private String cellToString(Cell cell, DataFormatter formatter, FormulaEvaluator evaluator) {
         if (cell == null) return null;
         try {
             if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
                 return new SimpleDateFormat("yyyy-MM-dd").format(cell.getDateCellValue());
             }
-            cell.setCellType(CellType.STRING);
-            return cell.getStringCellValue();
+            return formatter.formatCellValue(cell, evaluator);
         } catch (Exception e) {
             return null;
         }

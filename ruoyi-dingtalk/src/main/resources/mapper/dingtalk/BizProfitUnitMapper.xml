@@ -147,16 +147,30 @@
         limit 1
     </select>
 
-    <select id="selectOverlap" resultMap="BaseResult">
+    <select id="selectByImportUniqueKey" resultMap="BaseResult">
         select <include refid="cols"/>
         from biz_profit_unit
-        where profit_unit_name = #{profitUnitName}
-        and ifnull(deal_type, '') = ifnull(#{dealType}, '')
+        where owner_name = #{ownerName}
+          and start_date = #{startDate}
+          and transfer_date = #{transferDate}
+          and profit_unit_name = #{profitUnitName}
+          and deal_type = #{dealType}
+        limit 1
+    </select>
+    <select id="selectImportOverlap" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        where trim(owner_name) = trim(#{ownerName})
+        and trim(profit_unit_name) = trim(#{profitUnitName})
+        and ifnull(trim(deal_type), '') = ifnull(trim(#{dealType}), '')
+        and start_date is not null
+        and transfer_date is not null
         and start_date &lt;= #{transferDate}
         and transfer_date &gt;= #{startDate}
         <if test="excludeId != null">
             and id != #{excludeId}
         </if>
+        order by start_date asc, id asc
         limit 1
     </select>
 
@@ -287,6 +301,148 @@
                 #{createBy},
                 now()
             )
+    </insert>
+
+    <insert id="upsertBizProfitUnit"
+            parameterType="com.ruoyi.dingtalk.domain.biz.BizProfitUnit">
+        insert into biz_profit_unit
+        (
+            company_subject_id,
+            accountant_name,
+            accounting_start_date,
+            profit_unit_name,
+            profit_unit_code,
+            platform,
+            brand_name,
+            category_name,
+            dept_name,
+            dept_owner_job_no,
+            dept_owner_name,
+            region_name,
+            project_group,
+            project_owner_name,
+            owner_job_no,
+            owner_name,
+            store_auth_id,
+            store_code,
+            store_name,
+            account_id,
+            deal_type,
+            live_room_type,
+            accounting_basis,
+            register_mobile,
+            register_real_name,
+            register_referrer,
+            register_date,
+            deposit_amount,
+            start_date,
+            transfer_date,
+            stop_date,
+            is_enabled,
+            is_authorized,
+            qianchuan_account_id,
+            qianchuan_account_name,
+            qianchuan_mobile,
+            qianchuan_company_subject,
+            qianchuan_auth,
+            verify_record,
+            uid,
+            status,
+            remark,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        values
+        (
+            #{companySubjectId},
+            #{accountantName},
+            #{accountingStartDate},
+            #{profitUnitName},
+            #{profitUnitCode},
+            #{platform},
+            #{brandName},
+            #{categoryName},
+            #{deptName},
+            #{deptOwnerJobNo},
+            #{deptOwnerName},
+            #{regionName},
+            #{projectGroup},
+            #{projectOwnerName},
+            #{ownerJobNo},
+            #{ownerName},
+            #{storeAuthId},
+            #{storeCode},
+            #{storeName},
+            #{accountId},
+            #{dealType},
+            #{liveRoomType},
+            #{accountingBasis},
+            #{registerMobile},
+            #{registerRealName},
+            #{registerReferrer},
+            #{registerDate},
+            #{depositAmount},
+            #{startDate},
+            #{transferDate},
+            #{stopDate},
+            #{isEnabled},
+            #{isAuthorized},
+            #{qianchuanAccountId},
+            #{qianchuanAccountName},
+            #{qianchuanMobile},
+            #{qianchuanCompanySubject},
+            #{qianchuanAuth},
+            #{verifyRecord},
+            #{uid},
+            #{status},
+            #{remark},
+            #{createBy},
+            now(),
+            #{updateBy},
+            now()
+        )
+        on duplicate key update
+            company_subject_id = values(company_subject_id),
+            accountant_name = values(accountant_name),
+            accounting_start_date = values(accounting_start_date),
+            profit_unit_code = values(profit_unit_code),
+            platform = values(platform),
+            brand_name = values(brand_name),
+            category_name = values(category_name),
+            dept_name = values(dept_name),
+            dept_owner_job_no = values(dept_owner_job_no),
+            dept_owner_name = values(dept_owner_name),
+            region_name = values(region_name),
+            project_group = values(project_group),
+            project_owner_name = values(project_owner_name),
+            owner_job_no = values(owner_job_no),
+            store_auth_id = values(store_auth_id),
+            store_code = values(store_code),
+            store_name = values(store_name),
+            account_id = values(account_id),
+            live_room_type = values(live_room_type),
+            accounting_basis = values(accounting_basis),
+            register_mobile = values(register_mobile),
+            register_real_name = values(register_real_name),
+            register_referrer = values(register_referrer),
+            register_date = values(register_date),
+            deposit_amount = values(deposit_amount),
+            stop_date = values(stop_date),
+            is_enabled = values(is_enabled),
+            is_authorized = values(is_authorized),
+            qianchuan_account_id = values(qianchuan_account_id),
+            qianchuan_account_name = values(qianchuan_account_name),
+            qianchuan_mobile = values(qianchuan_mobile),
+            qianchuan_company_subject = values(qianchuan_company_subject),
+            qianchuan_auth = values(qianchuan_auth),
+            verify_record = values(verify_record),
+            uid = values(uid),
+            status = values(status),
+            remark = values(remark),
+            update_by = values(update_by),
+            update_time = now()
     </insert>
 
     <update id="updateBizProfitUnit"

@@ -1,5 +1,5 @@
 <template>
-  <div>你好,小鑫</div>
+    <div>2</div>
 </template>
 
 <script setup>
