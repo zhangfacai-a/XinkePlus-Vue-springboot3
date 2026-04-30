@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.dingtalk.mapper.BizProfitUnitMapper">
+
+    <resultMap id="BaseResult" type="com.ruoyi.dingtalk.domain.biz.BizProfitUnit">
+        <id property="id" column="id"/>
+
+        <result property="companySubjectId" column="company_subject_id"/>
+
+        <result property="accountantName" column="accountant_name"/>
+        <result property="accountingStartDate" column="accounting_start_date"/>
+
+        <result property="profitUnitName" column="profit_unit_name"/>
+        <result property="profitUnitCode" column="profit_unit_code"/>
+
+        <result property="platform" column="platform"/>
+        <result property="brandName" column="brand_name"/>
+        <result property="categoryName" column="category_name"/>
+
+        <result property="deptName" column="dept_name"/>
+        <result property="deptOwnerJobNo" column="dept_owner_job_no"/>
+        <result property="deptOwnerName" column="dept_owner_name"/>
+
+        <result property="regionName" column="region_name"/>
+        <result property="projectGroup" column="project_group"/>
+        <result property="projectOwnerName" column="project_owner_name"/>
+
+        <result property="ownerJobNo" column="owner_job_no"/>
+        <result property="ownerName" column="owner_name"/>
+
+        <result property="storeAuthId" column="store_auth_id"/>
+        <result property="storeCode" column="store_code"/>
+        <result property="storeName" column="store_name"/>
+
+        <result property="accountId" column="account_id"/>
+        <result property="dealType" column="deal_type"/>
+        <result property="liveRoomType" column="live_room_type"/>
+        <result property="accountingBasis" column="accounting_basis"/>
+
+        <result property="registerMobile" column="register_mobile"/>
+        <result property="registerRealName" column="register_real_name"/>
+        <result property="registerReferrer" column="register_referrer"/>
+        <result property="registerDate" column="register_date"/>
+
+        <result property="depositAmount" column="deposit_amount"/>
+
+        <result property="startDate" column="start_date"/>
+        <result property="transferDate" column="transfer_date"/>
+        <result property="stopDate" column="stop_date"/>
+
+        <result property="isEnabled" column="is_enabled"/>
+        <result property="isAuthorized" column="is_authorized"/>
+
+        <result property="qianchuanAccountId" column="qianchuan_account_id"/>
+        <result property="qianchuanAccountName" column="qianchuan_account_name"/>
+        <result property="qianchuanMobile" column="qianchuan_mobile"/>
+        <result property="qianchuanCompanySubject" column="qianchuan_company_subject"/>
+        <result property="qianchuanAuth" column="qianchuan_auth"/>
+
+        <result property="verifyRecord" column="verify_record"/>
+        <result property="uid" column="uid"/>
+
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="cols">
+        id,
+        company_subject_id,
+        accountant_name,
+        accounting_start_date,
+        profit_unit_name,
+        profit_unit_code,
+        platform,
+        brand_name,
+        category_name,
+        dept_name,
+        dept_owner_job_no,
+        dept_owner_name,
+        region_name,
+        project_group,
+        project_owner_name,
+        owner_job_no,
+        owner_name,
+        store_auth_id,
+        store_code,
+        store_name,
+        account_id,
+        deal_type,
+        live_room_type,
+        accounting_basis,
+        register_mobile,
+        register_real_name,
+        register_referrer,
+        register_date,
+        deposit_amount,
+        start_date,
+        transfer_date,
+        stop_date,
+        is_enabled,
+        is_authorized,
+        qianchuan_account_id,
+        qianchuan_account_name,
+        qianchuan_mobile,
+        qianchuan_company_subject,
+        qianchuan_auth,
+        verify_record,
+        uid,
+        status,
+        remark,
+        create_by,
+        create_time,
+        update_by,
+        update_time
+    </sql>
+
+    <select id="selectBizProfitUnitById" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        where id = #{id}
+    </select>
+
+    <select id="selectByCode" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        where profit_unit_code = #{profitUnitCode}
+        limit 1
+    </select>
+
+    <select id="selectByName" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        where profit_unit_name = #{profitUnitName}
+        limit 1
+    </select>
+
+    <select id="selectByCompanyAndName" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        where company_subject_id = #{companySubjectId}
+        and profit_unit_name = #{profitUnitName}
+        limit 1
+    </select>
+
+    <select id="selectOverlap" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        where profit_unit_name = #{profitUnitName}
+        and ifnull(deal_type, '') = ifnull(#{dealType}, '')
+        and start_date &lt;= #{transferDate}
+        and transfer_date &gt;= #{startDate}
+        <if test="excludeId != null">
+            and id != #{excludeId}
+        </if>
+        limit 1
+    </select>
+
+    <select id="selectBizProfitUnitList" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_profit_unit
+        <where>
+            <if test="profitUnitName != null and profitUnitName != ''">
+                and profit_unit_name like concat('%', #{profitUnitName}, '%')
+            </if>
+            <if test="platform != null and platform != ''">
+                and platform = #{platform}
+            </if>
+            <if test="brandName != null and brandName != ''">
+                and brand_name = #{brandName}
+            </if>
+            <if test="deptName != null and deptName != ''">
+                and dept_name = #{deptName}
+            </if>
+            <if test="ownerName != null and ownerName != ''">
+                and owner_name = #{ownerName}
+            </if>
+            <if test="dealType != null and dealType != ''">
+                and deal_type = #{dealType}
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <insert id="insertBizProfitUnit"
+            parameterType="com.ruoyi.dingtalk.domain.biz.BizProfitUnit"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into biz_profit_unit
+        (
+            company_subject_id,
+            accountant_name,
+            accounting_start_date,
+            profit_unit_name,
+            profit_unit_code,
+            platform,
+            brand_name,
+            category_name,
+            dept_name,
+            dept_owner_job_no,
+            dept_owner_name,
+            region_name,
+            project_group,
+            project_owner_name,
+            owner_job_no,
+            owner_name,
+            store_auth_id,
+            store_code,
+            store_name,
+            account_id,
+            deal_type,
+            live_room_type,
+            accounting_basis,
+            register_mobile,
+            register_real_name,
+            register_referrer,
+            register_date,
+            deposit_amount,
+            start_date,
+            transfer_date,
+            stop_date,
+            is_enabled,
+            is_authorized,
+            qianchuan_account_id,
+            qianchuan_account_name,
+            qianchuan_mobile,
+            qianchuan_company_subject,
+            qianchuan_auth,
+            verify_record,
+            uid,
+            status,
+            remark,
+            create_by,
+            create_time
+        )
+        values
+            (
+                #{companySubjectId},
+                #{accountantName},
+                #{accountingStartDate},
+                #{profitUnitName},
+                #{profitUnitCode},
+                #{platform},
+                #{brandName},
+                #{categoryName},
+                #{deptName},
+                #{deptOwnerJobNo},
+                #{deptOwnerName},
+                #{regionName},
+                #{projectGroup},
+                #{projectOwnerName},
+                #{ownerJobNo},
+                #{ownerName},
+                #{storeAuthId},
+                #{storeCode},
+                #{storeName},
+                #{accountId},
+                #{dealType},
+                #{liveRoomType},
+                #{accountingBasis},
+                #{registerMobile},
+                #{registerRealName},
+                #{registerReferrer},
+                #{registerDate},
+                #{depositAmount},
+                #{startDate},
+                #{transferDate},
+                #{stopDate},
+                #{isEnabled},
+                #{isAuthorized},
+                #{qianchuanAccountId},
+                #{qianchuanAccountName},
+                #{qianchuanMobile},
+                #{qianchuanCompanySubject},
+                #{qianchuanAuth},
+                #{verifyRecord},
+                #{uid},
+                #{status},
+                #{remark},
+                #{createBy},
+                now()
+            )
+    </insert>
+
+    <update id="updateBizProfitUnit"
+            parameterType="com.ruoyi.dingtalk.domain.biz.BizProfitUnit">
+        update biz_profit_unit
+        <set>
+            company_subject_id = #{companySubjectId},
+            accountant_name = #{accountantName},
+            accounting_start_date = #{accountingStartDate},
+            profit_unit_name = #{profitUnitName},
+            profit_unit_code = #{profitUnitCode},
+            platform = #{platform},
+            brand_name = #{brandName},
+            category_name = #{categoryName},
+            dept_name = #{deptName},
+            dept_owner_job_no = #{deptOwnerJobNo},
+            dept_owner_name = #{deptOwnerName},
+            region_name = #{regionName},
+            project_group = #{projectGroup},
+            project_owner_name = #{projectOwnerName},
+            owner_job_no = #{ownerJobNo},
+            owner_name = #{ownerName},
+            store_auth_id = #{storeAuthId},
+            store_code = #{storeCode},
+            store_name = #{storeName},
+            account_id = #{accountId},
+            deal_type = #{dealType},
+            live_room_type = #{liveRoomType},
+            accounting_basis = #{accountingBasis},
+            register_mobile = #{registerMobile},
+            register_real_name = #{registerRealName},
+            register_referrer = #{registerReferrer},
+            register_date = #{registerDate},
+            deposit_amount = #{depositAmount},
+            start_date = #{startDate},
+            transfer_date = #{transferDate},
+            stop_date = #{stopDate},
+            is_enabled = #{isEnabled},
+            is_authorized = #{isAuthorized},
+            qianchuan_account_id = #{qianchuanAccountId},
+            qianchuan_account_name = #{qianchuanAccountName},
+            qianchuan_mobile = #{qianchuanMobile},
+            qianchuan_company_subject = #{qianchuanCompanySubject},
+            qianchuan_auth = #{qianchuanAuth},
+            verify_record = #{verifyRecord},
+            uid = #{uid},
+            status = #{status},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizProfitUnitByIds">
+        delete from biz_profit_unit
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

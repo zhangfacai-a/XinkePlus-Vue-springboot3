@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.dingtalk.mapper.BizImportTemplateColumnMapper">
+    <resultMap id="BaseResult" type="com.ruoyi.dingtalk.domain.imports.BizImportTemplateColumn"><id property="id" column="id"/><result property="templateCode" column="template_code"/><result property="excelColumn" column="excel_column"/><result property="dbField" column="db_field"/><result property="fieldType" column="field_type"/><result property="requiredFlag" column="required_flag"/><result property="defaultValue" column="default_value"/><result property="formatRule" column="format_rule"/><result property="sortOrder" column="sort_order"/></resultMap>
+    <select id="selectByTemplateCode" resultMap="BaseResult">select * from biz_import_template_column where template_code=#{templateCode} order by sort_order asc,id asc</select>
+</mapper>
