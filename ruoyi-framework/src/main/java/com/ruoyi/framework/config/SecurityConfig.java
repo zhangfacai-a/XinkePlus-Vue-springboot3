@@ -108,7 +108,8 @@ public class SecurityConfig
                             "/dingtalk/**",
                             "/dingtalk/import/**",
                             "/dingtalk/doc/**",
-                            "/dingtalk/users/**"
+                            "/dingtalk/users/**",
+                            "/biz/import/**","biz/profitUnit/**"
                     ).permitAll()
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.dingtalk.mapper.BizCompanySubjectMapper">
+
+    <resultMap id="BaseResult" type="com.ruoyi.dingtalk.domain.biz.BizCompanySubject">
+        <id property="id" column="id"/>
+
+        <result property="accountantName" column="accountant_name"/>
+        <result property="startDate" column="start_date"/>
+        <result property="transferDate" column="transfer_date"/>
+
+        <result property="companyName" column="company_name"/>
+        <result property="subjectName" column="subject_name"/>
+
+        <result property="taxNo" column="tax_no"/>
+        <result property="legalPerson" column="legal_person"/>
+        <result property="establishDate" column="establish_date"/>
+        <result property="registeredCapital" column="registered_capital"/>
+        <result property="registeredAddress" column="registered_address"/>
+        <result property="bankAccount" column="bank_account"/>
+        <result property="bankName" column="bank_name"/>
+
+        <result property="brandName" column="brand_name"/>
+        <result property="remark" column="remark"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="cols">
+        id,
+        accountant_name,
+        start_date,
+        transfer_date,
+        company_name,
+        subject_name,
+        tax_no,
+        legal_person,
+        establish_date,
+        registered_capital,
+        registered_address,
+        bank_account,
+        bank_name,
+        brand_name,
+        remark,
+        status,
+        create_by,
+        create_time,
+        update_by,
+        update_time
+    </sql>
+
+    <select id="selectBizCompanySubjectById" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_company_subject
+        where id = #{id}
+    </select>
+
+    <select id="selectByCompanyAndSubject" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_company_subject
+        where company_name = #{companyName}
+        and subject_name = #{subjectName}
+        limit 1
+    </select>
+
+    <select id="selectOverlap" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_company_subject
+        where company_name = #{companyName}
+        and start_date &lt;= #{transferDate}
+        and transfer_date &gt;= #{startDate}
+        <if test="excludeId != null">
+            and id != #{excludeId}
+        </if>
+        limit 1
+    </select>
+
+    <select id="selectBizCompanySubjectList" resultMap="BaseResult">
+        select <include refid="cols"/>
+        from biz_company_subject
+        <where>
+            <if test="companyName != null and companyName != ''">
+                and company_name like concat('%', #{companyName}, '%')
+            </if>
+            <if test="subjectName != null and subjectName != ''">
+                and subject_name like concat('%', #{subjectName}, '%')
+            </if>
+            <if test="taxNo != null and taxNo != ''">
+                and tax_no like concat('%', #{taxNo}, '%')
+            </if>
+            <if test="legalPerson != null and legalPerson != ''">
+                and legal_person like concat('%', #{legalPerson}, '%')
+            </if>
+            <if test="brandName != null and brandName != ''">
+                and brand_name = #{brandName}
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <insert id="insertBizCompanySubject"
+            parameterType="com.ruoyi.dingtalk.domain.biz.BizCompanySubject"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into biz_company_subject
+        (
+            accountant_name,
+            start_date,
+            transfer_date,
+            company_name,
+            subject_name,
+            tax_no,
+            legal_person,
+            establish_date,
+            registered_capital,
+            registered_address,
+            bank_account,
+            bank_name,
+            brand_name,
+            remark,
+            status,
+            create_by,
+            create_time
+        )
+        values
+            (
+                #{accountantName},
+                #{startDate},
+                #{transferDate},
+                #{companyName},
+                #{subjectName},
+                #{taxNo},
+                #{legalPerson},
+                #{establishDate},
+                #{registeredCapital},
+                #{registeredAddress},
+                #{bankAccount},
+                #{bankName},
+                #{brandName},
+                #{remark},
+                #{status},
+                #{createBy},
+                now()
+            )
+    </insert>
+    <select id="selectByCompanyName" resultMap="BaseResult">
+        select * from biz_company_subject
+        where company_name = #{companyName}
+        order by id desc
+            limit 1
+    </select>
+    <update id="updateBizCompanySubject"
+            parameterType="com.ruoyi.dingtalk.domain.biz.BizCompanySubject">
+        update biz_company_subject
+        <set>
+            accountant_name = #{accountantName},
+            start_date = #{startDate},
+            transfer_date = #{transferDate},
+            company_name = #{companyName},
+            subject_name = #{subjectName},
+            tax_no = #{taxNo},
+            legal_person = #{legalPerson},
+            establish_date = #{establishDate},
+            registered_capital = #{registeredCapital},
+            registered_address = #{registeredAddress},
+            bank_account = #{bankAccount},
+            bank_name = #{bankName},
+            brand_name = #{brandName},
+            remark = #{remark},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizCompanySubjectByIds">
+        delete from biz_company_subject
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>
